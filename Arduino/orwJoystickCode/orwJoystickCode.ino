@@ -4,6 +4,9 @@
 #include <TinyMPU6050.h>
 
 #define REV_STEERING 1
+#define UPSIDEDOWN 0
+
+double totalTurnAngle = 360; // 360 is 180 to each side. typical road car have ~900
 
 bool setupMode = false;
 /*
@@ -33,14 +36,14 @@ void setup() {
   Serial.println("started..");
   delay(1000);
   Serial.print("1");
-  delay(1000); 
-  Serial.print("2");
-  delay(1000); 
-  Serial.print("3");
-  delay(1000); 
-  Serial.print("4");
-  delay(1000); 
-  Serial.print("5");
+  //delay(1000); 
+  //Serial.print("2");
+  //delay(1000); 
+  //Serial.print("3");
+  //delay(1000); 
+  //Serial.print("4");
+  //delay(1000); 
+  //Serial.print("5");
   // wait 5s so we can reprogram device incase of flooding on serial port
     // Initialize Joystick Library
   // Initialization
@@ -48,7 +51,7 @@ void setup() {
 
   // Calibration
   Serial.println("=====================================");
-  Serial.println("Starting calibration...");
+  //Serial.println("Starting calibration...");
   //mpu.Calibrate();
   
   Joystick.begin(false);
@@ -85,22 +88,31 @@ void loop() {
 
   int x = mpu.GetRawAccX();
   int y = mpu.GetRawAccY();
+  double ang;
+  if(UPSIDEDOWN == 0) {
+    ang = atan2(y,x);
+  
+  }else {
+    ang = atan2(y,-x);
 
-  double ang = atan2(y,x)*5000;
+  }
+  //double ang = atan2(y,x);
 
   if (prevang < 0 && ang > 0) {
-    if (abs(ang) > 8000) {
+    if (abs(ang) > 2.0) {
       turns = turns -1;
     }
     
   }
   if (prevang > 0 && ang < 0) {
-    if (abs(ang) > 8000) {
+    if (abs(ang) > 2.0) {
       turns = turns +1;
     }
   }
   prevang = ang;
-  ang = ang + (turns*3.1415*2*5000);
+  double turnMulti = (65534)/(totalTurnAngle*0.01745329252);
+  ang = ang + (turns*6.28318530718); // pi*2
+  ang = ang*turnMulti;
   //double tm= atan2(y,x)*10000;
   //int ang = tm/60;
   if( REV_STEERING == 1) {
@@ -148,6 +160,8 @@ void loop() {
     Serial.println(mpu.GetRawAccZ());
     Serial.print("angle = ");
     Serial.print(ang);
+    Serial.print("angleRad = ");
+    Serial.print(prevang);    
     Serial.print("turns = ");
     Serial.println(turns);
     //currentButtonState = !currentButtonState;
