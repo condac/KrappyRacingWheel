@@ -1,8 +1,11 @@
+//#define GYRO_STEERING
+
 #include <Joystick.h>
 
 #include <Arduino.h>
+#ifdef GYRO_STEERING
 #include <TinyMPU6050.h>
-
+#endif
 #define REV_STEERING 1
 #define UPSIDEDOWN 0
 
@@ -12,8 +15,9 @@ bool setupMode = false;
 /*
  *  Constructing MPU-6050
  */
+#ifdef GYRO_STEERING
 MPU6050 mpu (Wire);
-
+#endif
 Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
   32, 0,                  // Button Count, Hat Switch Count
   true, true, true,     // X and Y, but no Z Axis
@@ -47,13 +51,15 @@ void setup() {
   // wait 5s so we can reprogram device incase of flooding on serial port
     // Initialize Joystick Library
   // Initialization
-  mpu.Initialize();
 
+  #ifdef GYRO_STEERING
+  mpu.Initialize();
   // Calibration
   Serial.println("=====================================");
   //Serial.println("Starting calibration...");
   //mpu.Calibrate();
-  
+  #endif
+
   Joystick.begin(false);
   Joystick.setXAxisRange(-32767, 32767);
   
@@ -68,7 +74,10 @@ double prevang = 0.0;
 int turns = 0;
 
 void loop() {
-  mpu.Execute();
+#ifdef GYRO_STEERING
+mpu.Execute();
+#endif
+
   int a0 = analogRead(A0);
   
   int a1 = analogRead(A1);
@@ -85,10 +94,11 @@ void loop() {
   
   int a7 = analogRead(A9);
   int a8 = analogRead(A10);
-
+  double ang;
+#ifdef GYRO_STEERING
   int x = mpu.GetRawAccX();
   int y = mpu.GetRawAccY();
-  double ang;
+  
   if(UPSIDEDOWN == 0) {
     ang = atan2(y,x);
   
@@ -115,6 +125,9 @@ void loop() {
   ang = ang*turnMulti;
   //double tm= atan2(y,x)*10000;
   //int ang = tm/60;
+  #else
+  ang = (a0-512) * 64;
+  #endif
   if( REV_STEERING == 1) {
     ang = -ang;
   }
@@ -125,8 +138,8 @@ void loop() {
     ang = -32766;
   }
   
-  Joystick.setXAxis(ang);
-  Joystick.setYAxis(256);
+  Joystick.setXAxis(0);
+  Joystick.setYAxis(0);
   Joystick.setZAxis(0);
   //Joystick.setSteering(a3);
   //Joystick.setAccelerator(a4);
@@ -151,6 +164,7 @@ void loop() {
     Serial.println(counter);
     time1 = millis()+200;
     counter = 0;
+    #ifdef GYRO_STEERING
       Serial.print("--- Raw data:");
     Serial.print("Raw AccX = ");
     Serial.print(mpu.GetRawAccX());
@@ -164,6 +178,7 @@ void loop() {
     Serial.print(prevang);    
     Serial.print("turns = ");
     Serial.println(turns);
+    #endif
     //currentButtonState = !currentButtonState;
   }
 
