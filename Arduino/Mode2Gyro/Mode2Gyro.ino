@@ -1,5 +1,6 @@
 #define GYRO_STEERING
 
+
 #include <Joystick.h>
 
 #include <Arduino.h>
@@ -9,9 +10,10 @@
 #define REV_STEERING 0
 #define UPSIDEDOWN 0
 
-double totalTurnAngle = 720; // 360 is 180 to each side. typical road car have ~900
+double totalTurnAngle = 360; // 360 is 180 to each side. typical road car have ~900
+#define ALLOW_MULTITURNS
 
-bool setupMode = true;
+bool setupMode = false;
 /*
  *  Constructing MPU-6050
  */
@@ -35,7 +37,7 @@ void setup() {
   pinMode(5,INPUT_PULLUP);
   pinMode(7,INPUT_PULLUP);
   pinMode(15,INPUT_PULLUP);
-  pinMode(14,INPUT_PULLUP);
+  pinMode(14,INPUT_PULLUP);mpu.GetRawAccY();
   pinMode(16,INPUT_PULLUP);
   Serial.println("started..");
   delay(1000);
@@ -98,6 +100,7 @@ mpu.Execute();
 #ifdef GYRO_STEERING
   int x = mpu.GetRawAccZ();
   int y = mpu.GetRawAccY();
+  int unusedaxis = mpu.GetRawAccX();
   
   if(UPSIDEDOWN == 0) {
     ang = atan2(y,x);
@@ -107,18 +110,19 @@ mpu.Execute();
 
   }
   //double ang = atan2(y,x);
-
+  #ifdef ALLOW_MULTITURNS
   if (prevang < 0 && ang > 0) {
-    if (abs(ang) > 2.0) {
+    if (abs(ang) > 2.0 && abs(prevang) > 2.0) {
       turns = turns -1;
     }
     
   }
   if (prevang > 0 && ang < 0) {
-    if (abs(ang) > 2.0) {
+    if (abs(ang) > 2.0 && abs(prevang) > 2.0) {
       turns = turns +1;
     }
   }
+  #endif
   prevang = ang;
   double turnMulti = (65534)/(totalTurnAngle*0.01745329252);
   ang = ang + (turns*6.28318530718); // pi*2
