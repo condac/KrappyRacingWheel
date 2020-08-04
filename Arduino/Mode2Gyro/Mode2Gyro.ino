@@ -20,7 +20,7 @@ bool setupMode = false;
 #ifdef GYRO_STEERING
 MPU6050 mpu (Wire);
 #endif
-Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
+Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_JOYSTICK,
   32, 0,                  // Button Count, Hat Switch Count
   true, true, true,     // X and Y, but no Z Axis
   false, false, false,   // No Rx, Ry, or Rz

@@ -1,3 +1,7 @@
+// Mode 1. Single arduino for all buttons, 2 rotary and 5 analog.
+// Buttons are done with a button matrix, see scematics: !TODO!
+
+
 //#define GYRO_STEERING
 #define ROTARY_ENCODER
 #include <Joystick.h>
@@ -17,6 +21,24 @@
 // set up encoder object
 MD_REncoder R1 = MD_REncoder(0, 1);
 MD_REncoder R2 = MD_REncoder(2, 3);
+
+#define matrix1 18
+#define matrix2 19
+#define matrix3 20
+#define matrix4 21
+
+#define mbutt1 14
+#define mbutt2 15
+#define mbutt3 16
+
+#define MATRIXLINES 4
+#define MATRIXBUTTONS 3
+#define MATRIXBUTTONSTOTAL MATRIXLINES*MATRIXBUTTONS
+
+bool mbuttons[MATRIXBUTTONSTOTAL+1];
+int mlines[MATRIXLINES];
+int mbutts[MATRIXBUTTONS];
+
 
 #endif
 
@@ -49,6 +71,7 @@ void setup() {
   pinMode(15,INPUT_PULLUP);
   pinMode(14,INPUT_PULLUP);
   pinMode(16,INPUT_PULLUP);
+  setupMatrix();
   R1.begin();
   R2.begin();
   Serial.println("started..");
@@ -85,6 +108,27 @@ void setup() {
   Joystick.setRyAxisRange(-512, 512);
   Joystick.setRzAxisRange(-512, 512);
 }
+
+void setupMatrix() {
+
+  mlines[0] = matrix1;
+  mlines[1] = matrix2;
+  mlines[2] = matrix3;
+  mlines[3] = matrix4;
+
+  mbutts[0] = mbutt1;
+  mbutts[1] = mbutt2;
+  mbutts[2] = mbutt3;
+
+  for (int i=0;i<MATRIXLINES;i++) {
+    pinMode(mlines[i],INPUT_PULLUP);
+  }
+  for (int i=0;i<MATRIXBUTTONS;i++) {
+    pinMode(mbutts[i],INPUT_PULLUP);
+  }
+
+}
+
 long counter = 0;
 long time1 = 0;
 int button = 0; 
@@ -97,18 +141,40 @@ void loop() {
 
 }
 
-void handleButton(int pin, int buttonNr, bool reverse) {
-
-  bool state = false;
-  state = digitalRead(pin);
-  if (reverse) {
-    state = !state;
+void handleMatrix() {
+  for (int i=0;i<MATRIXLINES;i++) {
+    pinMode(mlines[i],OUTPUT);
+    digitalWrite(mlines[i],LOW);
+    for (int x=0;x<MATRIXBUTTONS;x++) {
+      mbuttons[i*MATRIXBUTTONS+x+1] = !digitalRead(mbutts[x]);
+    }
+    pinMode(mlines[i],INPUT_PULLUP);
+    digitalWrite(mlines[i],HIGH);
   }
-  Joystick.setButton(buttonNr, state);
+
+  
+}
+
+void handleButton(int pin, int buttonNr, bool reverse) {
+  if (pin <0) {
+    bool state = mbuttons[-pin];
+    Joystick.setButton(buttonNr, state);
+  } else {
+    bool state = false;
+    state = digitalRead(pin);
+    if (reverse) {
+      state = !state;
+    }
+    Joystick.setButton(buttonNr, state);
+  }
 }
 
 void handleMultiWheelButton(int aPort, int button1, int button2, int startButton, int sections) {
   int value = analogRead(aPort);
+  sections = sections -1;
+  if(sections == 0) {
+    sections = 1;
+  }
   int divider = 1024/sections;
   value = value/divider;
 
@@ -135,6 +201,7 @@ void handleEncoder(MD_REncoder R, int buttonNr) {
 
 long rotarySticky = 0;
 long stick = 10;
+
 void mode1() {
   
   // read 2 gear shifters
@@ -142,13 +209,12 @@ void mode1() {
   handleButton(7,1,false);
 
 
-
   // Read 2 encoders
 
   //handleEncoder(R1,2);
   //handleEncoder(R2,4);
     uint8_t x = R1.read();
-  if (x) {
+  if (x && setupMode) {
     Serial.print(x);
     Serial.println("banan"); 
   }
@@ -169,7 +235,7 @@ void mode1() {
     }
   }
    x = R2.read();
-  if (x) {
+  if (x && setupMode) {
     Serial.print(x);
     Serial.println("banan"); 
   }
@@ -193,7 +259,24 @@ void mode1() {
   //getRotationType1(int pinIn1, int pinIn2, int nr)
 
   // read button matrix
-
+  handleMatrix();
+  Joystick.setButton(6, mbuttons[1]);
+  Joystick.setButton(7, mbuttons[2]);
+  Joystick.setButton(8, mbuttons[3]);
+  
+  Joystick.setButton(9, mbuttons[4]);
+  Joystick.setButton(10, mbuttons[5]);
+  Joystick.setButton(11, mbuttons[6]);
+  
+  Joystick.setButton(12, mbuttons[7]);
+  Joystick.setButton(13, mbuttons[8]);
+  //Joystick.setButton(14, mbuttons[9]);
+  
+  Joystick.setButton(14, mbuttons[10]);
+  Joystick.setButton(15, mbuttons[11]);
+  //Joystick.setButton(17, mbuttons[12]);
+  
+  
   // Read 4 analog inputs
   int a0 = analogRead(A6);
   a0 = (a0-512);
@@ -211,11 +294,27 @@ void mode1() {
   Joystick.setRzAxis(0);
   // read multiwheel dial
 
-  handleMultiWheelButton(A8, 14, 15,10 , 4);
+  handleMultiWheelButton(A8, -9, -12, 16 , 5);
 
   // send state
   Joystick.sendState();
+  counter++;
+
+  if (time1<millis() && setupMode) {
+    Serial.println(counter);
+    time1 = millis()+200;
+    counter = 0;
+
+    Serial.print("matrixbuttons = ");
+    for (int i=0;i<MATRIXBUTTONSTOTAL;i++) {
+      Serial.print(" ");
+      Serial.print(mbuttons[i+1]);
+    }
+    Serial.println("");
+    
+  }
 }
+
 void mode2() {
   #ifdef GYRO_STEERING
 mpu.Execute();
