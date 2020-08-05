@@ -1,5 +1,36 @@
+// ####### Configuration values
 #define GYRO_STEERING
 
+#define THROTTLE_MAX 1023 // Analog value at maximum position
+#define THROTTLE_MIN 1 // Analog value at minimum position
+#define THROTTLE_REV 0  // Set to 1 to reverse or 0 for normal
+#define THROTTLE_PIN A8
+
+#define BRAKE_MAX 1023 // Analog value at maximum position
+#define BRAKE_MIN 1 // Analog value at minimum position
+#define BRAKE_REV 0  // Set to 1 to reverse or 0 for normal
+#define BRAKE_PIN A9
+
+#define CLUTCH_MAX 1023 // Analog value at maximum position
+#define CLUTCH_MIN 1 // Analog value at minimum position
+#define CLUTCH_REV 0  // Set to 1 to reverse or 0 for normal
+#define CLUTCH_PIN A10
+
+// NOTE! These steering values is not used if gyro steering is in use
+#define STEERING_MAX 1023 // Analog value at maximum position
+#define STEERING_MIN 1 // Analog value at minimum position
+#define STEERING_REV 0  // Set to 1 to reverse or 0 for normal
+#define STEERING_PIN A7
+
+// Flip gyro axis:
+#define REV_STEERING 0
+#define UPSIDEDOWN 0
+
+double totalTurnAngle = 360; // 360 is 180 to each side. typical road car have ~900
+#define ALLOW_MULTITURNS
+
+
+// ####### End of Configuration
 
 #include <Joystick.h>
 
@@ -7,11 +38,8 @@
 #ifdef GYRO_STEERING
 #include <TinyMPU6050.h>
 #endif
-#define REV_STEERING 0
-#define UPSIDEDOWN 0
 
-double totalTurnAngle = 360; // 360 is 180 to each side. typical road car have ~900
-#define ALLOW_MULTITURNS
+
 
 bool setupMode = false;
 /*
@@ -21,11 +49,27 @@ bool setupMode = false;
 MPU6050 mpu (Wire);
 #endif
 Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_JOYSTICK,
-  32, 0,                  // Button Count, Hat Switch Count
+  2, 0,                  // Button Count, Hat Switch Count
   true, true, true,     // X and Y, but no Z Axis
   false, false, false,   // No Rx, Ry, or Rz
-  true, true,          // No rudder or throttle
-  false, true, false);  // No accelerator, brake, or steering
+  false, false,          // No rudder or throttle
+  true, true, false);  // No accelerator, brake, or steering
+
+long counter = 0;
+long time1 = 0;
+int button = 0; 
+bool currentButtonState;
+double ang;
+double prevang = 0.0;
+int turns = 0;
+
+int th;
+int thRaw;
+int br;
+int brRaw;
+int cl;
+int clRaw;
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -37,67 +81,146 @@ void setup() {
   pinMode(5,INPUT_PULLUP);
   pinMode(7,INPUT_PULLUP);
   pinMode(15,INPUT_PULLUP);
-  pinMode(14,INPUT_PULLUP);mpu.GetRawAccY();
+  pinMode(14,INPUT_PULLUP);
   pinMode(16,INPUT_PULLUP);
+  pinMode(THROTTLE_PIN, INPUT);
+  pinMode(BRAKE_PIN, INPUT);
+  pinMode(CLUTCH_PIN, INPUT);
   Serial.println("started..");
   delay(1000);
   Serial.print("1");
-  //delay(1000); 
-  //Serial.print("2");
-  //delay(1000); 
-  //Serial.print("3");
-  //delay(1000); 
-  //Serial.print("4");
-  //delay(1000); 
-  //Serial.print("5");
-  // wait 5s so we can reprogram device incase of flooding on serial port
+  
+  // wait 1s so we can reprogram device incase of flooding on serial port
     // Initialize Joystick Library
   // Initialization
 
   #ifdef GYRO_STEERING
   mpu.Initialize();
-  // Calibration
-  Serial.println("=====================================");
-  //Serial.println("Starting calibration...");
-  //mpu.Calibrate();
+  Serial.println("Gyro active");
   #endif
 
   Joystick.begin(false);
   Joystick.setXAxisRange(-32767, 32767);
-  
-  //Joystick.setXAxisRange(-512, 512);
+  Joystick.setAcceleratorRange(0, 1023);
+  Joystick.setBrakeRange(0, 1023);
   Joystick.setYAxisRange(-512, 512);
+  Joystick.setZAxisRange(0, 1023);
 }
-long counter = 0;
-long time1 = 0;
-int button = 0; 
-bool currentButtonState;
-double prevang = 0.0;
-int turns = 0;
+
 
 void loop() {
 #ifdef GYRO_STEERING
-mpu.Execute();
+  mpu.Execute();
+  gyroSteering();
 #endif
 
-  int a0 = analogRead(A0);
+  // Throttle
+  int th = analogRead(THROTTLE_PIN);
+  if(THROTTLE_REV == 1) {
+    th = map(th, THROTTLE_MAX, THROTTLE_MIN,0,1023);
+  } else {
+    th = map(th, THROTTLE_MIN, THROTTLE_MAX,0,1023);
+  }
   
-  int a1 = analogRead(A1);
+  Joystick.setAccelerator(th);
+
+  // Brake
+  brRaw = analogRead(BRAKE_PIN);
+  if(BRAKE_REV == 1) {
+    br = map(brRaw, BRAKE_MAX, BRAKE_MIN,0,1023);
+  } else {
+    br = map(brRaw, BRAKE_MIN, BRAKE_MAX,0,1023);
+  }
   
-  int a2 = analogRead(A2);
+  Joystick.setBrake(br);
+
+
+    // Clutch
+  clRaw = analogRead(CLUTCH_PIN);
+  if(CLUTCH_REV == 1) {
+    cl = map(clRaw, CLUTCH_MAX, CLUTCH_MIN,0,1023);
+  } else {
+    cl = map(clRaw, CLUTCH_MIN, CLUTCH_MAX,0,1023);
+  }
   
-  int a3 = analogRead(A3);
+  Joystick.setZAxis(cl);
+
   
-  int a4 = analogRead(A6);
+  Joystick.setYAxis(0);
+  //Joystick.setZAxis(0);
+  //Joystick.setSteering(a3);
+  //Joystick.setAccelerator(a4);
+  //Joystick.setBrake(0);
+
   
-  int a5 = analogRead(A7);
+  handleButton(5,0,false);
+  handleButton(7,1,false);
+
+  Joystick.sendState();
+
+  counter++;
   
-  //int aMulti = analogRead(A8);
-  
-  int a7 = analogRead(A9);
-  int a8 = analogRead(A10);
-  double ang;
+  if (time1<millis() && setupMode) {
+    Serial.println(counter);
+    time1 = millis()+200;
+    counter = 0;
+    #ifdef GYRO_STEERING
+    Serial.print("--- Raw data:");
+    Serial.print("Raw AccX = ");
+    Serial.print(mpu.GetRawAccX());
+    Serial.print("Raw AccY = ");
+    Serial.print(mpu.GetRawAccY());
+    Serial.print("Raw AccZ = ");
+    Serial.println(mpu.GetRawAccZ());
+    Serial.print("angle = ");
+    Serial.print(ang);
+    Serial.print("angleRad = ");
+    Serial.print(prevang);    
+    Serial.print("turns = ");
+    Serial.println(turns);
+    #endif
+    Serial.print("Throttle, Raw: ");
+    Serial.print(thRaw);
+    Serial.print("map:");
+    Serial.print(th);
+
+    Serial.print("Brake, Raw: ");
+    Serial.print(brRaw);
+    Serial.print("map:");
+    Serial.print(br);
+
+    Serial.print("Clutch, Raw: ");
+    Serial.print(clRaw);
+    Serial.print("map:");
+    Serial.print(cl);
+    //currentButtonState = !currentButtonState;
+  }
+
+}
+
+void handleButton(int pin, int buttonNr, bool reverse) {
+
+  bool state = false;
+  state = digitalRead(pin);
+  if (reverse) {
+    state = !state;
+  }
+  Joystick.setButton(buttonNr, state);
+}
+
+void handleMultiWheelButton(int aPort, int button1, int button2, int startButton, int sections) {
+  int value = analogRead(aPort);
+  int divider = 1024/sections;
+  value = value/divider;
+
+  handleButton(button1, value*2+startButton, true);
+  handleButton(button2, value*2+startButton+1, true);
+}
+
 #ifdef GYRO_STEERING
+void gyroSteering() {
+
+
   int x = mpu.GetRawAccZ();
   int y = mpu.GetRawAccY();
   int unusedaxis = mpu.GetRawAccX();
@@ -129,9 +252,6 @@ mpu.Execute();
   ang = ang*turnMulti;
   //double tm= atan2(y,x)*10000;
   //int ang = tm/60;
-  #else
-  ang = (a0-512) * 64;
-  #endif
   if( REV_STEERING == 1) {
     ang = -ang;
   }
@@ -143,66 +263,6 @@ mpu.Execute();
   }
   
   Joystick.setXAxis(ang);
-  Joystick.setYAxis(0);
-  Joystick.setZAxis(0);
-  //Joystick.setSteering(a3);
-  //Joystick.setAccelerator(a4);
-  Joystick.setBrake(0);
-
-  
-  handleButton(5,0,false);
-  
-  handleButton(7,1,false);
-
-  handleMultiWheelButton(A8, 14, 15,10 , 4);
-
-  
-  //handleButton(14,2,true);
-  
-  //handleButton(15,3,true);
-  
-  Joystick.sendState();
-  counter++;
-  
-  if (time1<millis() && setupMode) {
-    Serial.println(counter);
-    time1 = millis()+200;
-    counter = 0;
-    #ifdef GYRO_STEERING
-      Serial.print("--- Raw data:");
-    Serial.print("Raw AccX = ");
-    Serial.print(mpu.GetRawAccX());
-    Serial.print("Raw AccY = ");
-    Serial.print(mpu.GetRawAccY());
-    Serial.print("Raw AccZ = ");
-    Serial.println(mpu.GetRawAccZ());
-    Serial.print("angle = ");
-    Serial.print(ang);
-    Serial.print("angleRad = ");
-    Serial.print(prevang);    
-    Serial.print("turns = ");
-    Serial.println(turns);
-    #endif
-    //currentButtonState = !currentButtonState;
-  }
-
 }
-
-void handleButton(int pin, int buttonNr, bool reverse) {
-
-  bool state = false;
-  state = digitalRead(pin);
-  if (reverse) {
-    state = !state;
-  }
-  Joystick.setButton(buttonNr, state);
-}
-
-void handleMultiWheelButton(int aPort, int button1, int button2, int startButton, int sections) {
-  int value = analogRead(aPort);
-  int divider = 1024/sections;
-  value = value/divider;
-
-  handleButton(button1, value*2+startButton, true);
-  handleButton(button2, value*2+startButton+1, true);
-}
+#endif
+  
