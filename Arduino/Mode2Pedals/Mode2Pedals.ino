@@ -1,19 +1,19 @@
 // ####### Configuration values
-#define GYRO_STEERING
+//#define GYRO_STEERING
 
-#define THROTTLE_MAX 1023 // Analog value at maximum position
-#define THROTTLE_MIN 1 // Analog value at minimum position
-#define THROTTLE_REV 0  // Set to 1 to reverse or 0 for normal
+#define THROTTLE_MAX 900 // Analog value at maximum position
+#define THROTTLE_MIN 110 // Analog value at minimum position
+#define THROTTLE_REV 1  // Set to 1 to reverse or 0 for normal
 #define THROTTLE_PIN A8
 
-#define BRAKE_MAX 1023 // Analog value at maximum position
-#define BRAKE_MIN 1 // Analog value at minimum position
-#define BRAKE_REV 0  // Set to 1 to reverse or 0 for normal
+#define BRAKE_MAX 800 // Analog value at maximum position
+#define BRAKE_MIN 630 // Analog value at minimum position
+#define BRAKE_REV 1  // Set to 1 to reverse or 0 for normal
 #define BRAKE_PIN A9
 
-#define CLUTCH_MAX 1023 // Analog value at maximum position
-#define CLUTCH_MIN 1 // Analog value at minimum position
-#define CLUTCH_REV 0  // Set to 1 to reverse or 0 for normal
+#define CLUTCH_MAX 950 // Analog value at maximum position
+#define CLUTCH_MIN 250 // Analog value at minimum position
+#define CLUTCH_REV 1  // Set to 1 to reverse or 0 for normal
 #define CLUTCH_PIN A10
 
 // NOTE! These steering values is not used if gyro steering is in use
@@ -50,7 +50,7 @@ MPU6050 mpu (Wire);
 #endif
 Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_JOYSTICK,
   2, 0,                  // Button Count, Hat Switch Count
-  true, true, true,     // X and Y, but no Z Axis
+  false, false, true,     // X and Y, but no Z Axis
   false, false, false,   // No Rx, Ry, or Rz
   false, false,          // No rudder or throttle
   true, true, false);  // No accelerator, brake, or steering

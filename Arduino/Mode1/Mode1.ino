@@ -171,7 +171,7 @@ void handleButton(int pin, int buttonNr, bool reverse) {
 
 void handleMultiWheelButton(int aPort, int button1, int button2, int startButton, int sections) {
   int value = analogRead(aPort);
-  sections = sections -1;
+  sections = sections;
   if(sections == 0) {
     sections = 1;
   }
