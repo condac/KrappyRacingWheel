@@ -176,6 +176,7 @@ void handleMultiWheelButton(int aPort, int button1, int button2, int startButton
     sections = 1;
   }
   int divider = 1024/sections;
+  //divider = divider + 1;
   value = value/divider;
 
   handleButton(button1, value*2+startButton, true);
@@ -198,10 +199,88 @@ void handleEncoder(MD_REncoder R, int buttonNr) {
     Joystick.setButton(buttonNr+1, false);
   }
 }
+int getPosition(int aPort, int sections) {
+  int divider = 1023/sections;
+  divider = divider +1;
+  int val = analogRead(aPort);
+  int out = 0;
+  int test = divider;
+  //Serial.print("val");
+  //Serial.print(val);
+  
+  //Serial.print("test");
+  
+  //Serial.println(test);
+  while (val > test) {
+    
+
+    test = test + divider;
+    out = out + 1;
+  //    Serial.print("val");
+  //Serial.print(val);
+  //Serial.print("test");
+  //Serial.println(test);
+  }
+  
+  //Serial.print("getpos return:");
+  
+  //Serial.println(out);
+  return out;
+}
 
 long rotarySticky = 0;
-long stick = 10;
+long stick = 15;
+int ERSlast[2];
+long ERSsticky[2];
+int ERScycle[2];
+long ERSstick = 20;
+long ERSpause = 500;
 
+void handleERS(int x, int aPin, int button1, int button2) {
+  
+  int pos = getPosition(aPin,6);
+  //Serial.println(pos);
+  if (ERSlast[x] != pos) {
+    //Serial.print("ers changed");
+    //Serial.print(pos);
+    //Serial.print(" ");
+    
+    //Serial.println(ERSlast[x]);
+    if (ERScycle[x] == 0) { // we are not doing anything yet
+      //Serial.println("cycle 0");
+      if (ERSlast[x] < pos) {
+        // ERS is turned up
+        ERScycle[x] = 1;
+        Joystick.setButton(button2, true);
+        ERSsticky[x] = millis()+ERSstick;
+        ERSlast[x]++;
+      } else {
+        // ERS is turned down
+        ERScycle[x] = 1;
+        Joystick.setButton(button1, true);
+        ERSsticky[x] = millis()+ERSstick;
+        ERSlast[x]--;
+      }
+    }
+  }
+  
+  if (ERScycle[x] == 1) {
+    if (ERSsticky[x] < millis()) {
+      Joystick.setButton(button1, false);
+      Joystick.setButton(button2, false);
+      ERSsticky[x] = millis()+ERSpause;
+      ERScycle[x] = 2;
+    }
+  }
+  if (ERScycle[x] == 2) {
+    if (ERSsticky[x] < millis()) {
+      Joystick.setButton(button1, false);
+      Joystick.setButton(button2, false);
+      ERScycle[x] = 0;
+    }
+  }
+}
+bool falseOnce = false;
 void mode1() {
   
   // read 2 gear shifters
@@ -222,15 +301,17 @@ void mode1() {
     Joystick.setButton(2, true);
     Joystick.setButton(2+1, false);
     rotarySticky = millis()+stick;
-    
+    falseOnce = true;
   } else if (x==32) {
     Joystick.setButton(2, false);
     Joystick.setButton(2+1, true);
     rotarySticky = millis()+stick;
+    falseOnce = true;
   } else {
-    if (rotarySticky < millis()) {
+    if (rotarySticky < millis() && falseOnce) {
       Joystick.setButton(2, false);
-     Joystick.setButton(2+1, false);
+      Joystick.setButton(2+1, false);
+      falseOnce = false;
   
     }
   }
@@ -243,16 +324,18 @@ void mode1() {
     Joystick.setButton(4, true);
     Joystick.setButton(4+1, false);
     rotarySticky = millis()+stick;
+    falseOnce = true;
     
   } else if (x==32) {
     Joystick.setButton(4, false);
     Joystick.setButton(4+1, true);
     rotarySticky = millis()+stick;
+    falseOnce = true;
   } else {
-    if (rotarySticky < millis()) {
+    if (rotarySticky < millis() && falseOnce) {
       Joystick.setButton(4, false);
       Joystick.setButton(4+1, false);
-  
+      falseOnce = false;
     }
   }
   //getRotationType1(0, 1, 1)
@@ -295,6 +378,10 @@ void mode1() {
   // read multiwheel dial
 
   handleMultiWheelButton(A8, -9, -12, 16 , 5);
+
+  // test ERS analog mode
+  
+  handleERS(0,A10,4,5);
 
   // send state
   Joystick.sendState();
