@@ -233,8 +233,8 @@ long stick = 15;
 int ERSlast[2];
 long ERSsticky[2];
 int ERScycle[2];
-long ERSstick = 20;
-long ERSpause = 500;
+long ERSstick = 30;
+long ERSpause = 250;
 
 void handleERS(int x, int aPin, int button1, int button2) {
   
@@ -295,29 +295,17 @@ void mode1() {
 
   //handleEncoder(R1,2);
   //handleEncoder(R2,4);
-    uint8_t x = R1.read();
+  uint8_t x = R1.read();
   if (x && setupMode) {
     Serial.print(x);
     Serial.println("banan"); 
   }
   if (x==16) {
-    Joystick.setButton(2, true);
-    Joystick.setButton(2+1, false);
-    rotarySticky = millis()+stick;
-    falseOnce = true;
+    pulseButton(2,stick);
   } else if (x==32) {
-    Joystick.setButton(2, false);
-    Joystick.setButton(2+1, true);
-    rotarySticky = millis()+stick;
-    falseOnce = true;
-  } else {
-    if (rotarySticky < millis() && falseOnce) {
-      Joystick.setButton(2, false);
-      Joystick.setButton(2+1, false);
-      falseOnce = false;
+    pulseButton(2+1,stick);
+  } 
   
-    }
-  }
   x = R2.read();
   if (x && setupMode) {
     Serial.print(x);
