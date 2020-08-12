@@ -251,13 +251,16 @@ void handleERS(int x, int aPin, int button1, int button2) {
       if (ERSlast[x] < pos) {
         // ERS is turned up
         ERScycle[x] = 1;
-        Joystick.setButton(button2, true);
+        pulseButton(button2,ERSstick);
+        //Joystick.setButton(button2, true);
         ERSsticky[x] = millis()+ERSstick;
         ERSlast[x]++;
       } else {
         // ERS is turned down
         ERScycle[x] = 1;
-        Joystick.setButton(button1, true);
+        pulseButton(button1,ERSstick);
+        
+        //Joystick.setButton(button1, true);
         ERSsticky[x] = millis()+ERSstick;
         ERSlast[x]--;
       }
@@ -266,16 +269,16 @@ void handleERS(int x, int aPin, int button1, int button2) {
   
   if (ERScycle[x] == 1) {
     if (ERSsticky[x] < millis()) {
-      Joystick.setButton(button1, false);
-      Joystick.setButton(button2, false);
+      //Joystick.setButton(button1, false);
+      //Joystick.setButton(button2, false);
       ERSsticky[x] = millis()+ERSpause;
       ERScycle[x] = 2;
     }
   }
   if (ERScycle[x] == 2) {
     if (ERSsticky[x] < millis()) {
-      Joystick.setButton(button1, false);
-      Joystick.setButton(button2, false);
+      //Joystick.setButton(button1, false);
+      //Joystick.setButton(button2, false);
       ERScycle[x] = 0;
     }
   }
@@ -315,28 +318,30 @@ void mode1() {
   
     }
   }
-   x = R2.read();
+  x = R2.read();
   if (x && setupMode) {
     Serial.print(x);
     Serial.println("banan"); 
   }
   if (x==16) {
-    Joystick.setButton(4, true);
-    Joystick.setButton(4+1, false);
-    rotarySticky = millis()+stick;
-    falseOnce = true;
+    pulseButton(4,stick);
+    //Joystick.setButton(4, true);
+    //Joystick.setButton(4+1, false);
+    //rotarySticky = millis()+stick;
+    //falseOnce = true;
     
   } else if (x==32) {
-    Joystick.setButton(4, false);
-    Joystick.setButton(4+1, true);
-    rotarySticky = millis()+stick;
-    falseOnce = true;
+    pulseButton(4+1,stick);
+    //Joystick.setButton(4, false);
+    //Joystick.setButton(4+1, true);
+    //rotarySticky = millis()+stick;
+    //falseOnce = true;
   } else {
-    if (rotarySticky < millis() && falseOnce) {
-      Joystick.setButton(4, false);
-      Joystick.setButton(4+1, false);
-      falseOnce = false;
-    }
+    //if (rotarySticky < millis() && falseOnce) {
+    //  Joystick.setButton(4, false);
+    //  Joystick.setButton(4+1, false);
+    //  falseOnce = false;
+    //}
   }
   //getRotationType1(0, 1, 1)
   //getRotationType1(int pinIn1, int pinIn2, int nr)
@@ -383,6 +388,8 @@ void mode1() {
   
   handleERS(0,A10,4,5);
 
+  // handle pulsed buttons
+  pulseLoop();
   // send state
   Joystick.sendState();
   counter++;
@@ -402,112 +409,25 @@ void mode1() {
   }
 }
 
-void mode2() {
-  #ifdef GYRO_STEERING
-mpu.Execute();
-#endif
 
-  int a0 = analogRead(A0);
-  
-  int a1 = analogRead(A1);
-  
-  int a2 = analogRead(A2);
-  
-  int a3 = analogRead(A3);
-  
-  int a4 = analogRead(A6);
-  
-  int a5 = analogRead(A7);
-  
-  //int aMulti = analogRead(A8);
-  
-  int a7 = analogRead(A9);
-  int a8 = analogRead(A10);
-  double ang;
-#ifdef GYRO_STEERING
-  int x = mpu.GetRawAccX();
-  int y = mpu.GetRawAccY();
-  
-  if(UPSIDEDOWN == 0) {
-    ang = atan2(y,x);
-  
-  }else {
-    ang = atan2(y,-x);
+#define PULSEARRAY 32
+long pulseArray[PULSEARRAY];
 
-  }
-  //double ang = atan2(y,x);
-
-  if (prevang < 0 && ang > 0) {
-    if (abs(ang) > 2.0) {
-      turns = turns -1;
-    }
+void pulseButton(int button, long pulse) {
     
-  }
-  if (prevang > 0 && ang < 0) {
-    if (abs(ang) > 2.0) {
-      turns = turns +1;
+  pulseArray[button] = millis() + pulse;    
+
+}
+void pulseLoop() {
+  long mil = millis();
+  for (int i=0;i<PULSEARRAY;i++) {
+    if (pulseArray[i] != 0) {
+      if(pulseArray[i] > mil) {
+        Joystick.setButton(i, true);
+      } else {
+        Joystick.setButton(i,false);
+      }
     }
   }
-  prevang = ang;
-  double turnMulti = (65534)/(totalTurnAngle*0.01745329252);
-  ang = ang + (turns*6.28318530718); // pi*2
-  ang = ang*turnMulti;
-  //double tm= atan2(y,x)*10000;
-  //int ang = tm/60;
-  #else
-  ang = (a0-512) * 64;
-  #endif
-  if( REV_STEERING == 1) {
-    ang = -ang;
-  }
-  if (ang > 32766.0) {
-    ang = 32766;
-  }
-  if (ang < -32766.0) {
-    ang = -32766;
-  }
-  
-  Joystick.setXAxis(0);
-  Joystick.setYAxis(0);
-  Joystick.setZAxis(0);
-  //Joystick.setSteering(a3);
-  //Joystick.setAccelerator(a4);
-  Joystick.setBrake(0);
 
-  
-  handleButton(5,0,false);
-  
-  handleButton(7,1,false);
-
-  handleMultiWheelButton(A8, 14, 15,10 , 4);
-
-  
-  //handleButton(14,2,true);
-  
-  //handleButton(15,3,true);
-  
-  Joystick.sendState();
-  counter++;
-  
-  if (time1<millis() && setupMode) {
-    Serial.println(counter);
-    time1 = millis()+200;
-    counter = 0;
-    #ifdef GYRO_STEERING
-      Serial.print("--- Raw data:");
-    Serial.print("Raw AccX = ");
-    Serial.print(mpu.GetRawAccX());
-    Serial.print("Raw AccY = ");
-    Serial.print(mpu.GetRawAccY());
-    Serial.print("Raw AccZ = ");
-    Serial.println(mpu.GetRawAccZ());
-    Serial.print("angle = ");
-    Serial.print(ang);
-    Serial.print("angleRad = ");
-    Serial.print(prevang);    
-    Serial.print("turns = ");
-    Serial.println(turns);
-    #endif
-    //currentButtonState = !currentButtonState;
-  }
 }
