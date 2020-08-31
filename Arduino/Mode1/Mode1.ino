@@ -45,6 +45,7 @@ int mbutts[MATRIXBUTTONS];
 
 double totalTurnAngle = 360; // 360 is 180 to each side. typical road car have ~900
 
+long shiftPulse = 20;
 bool setupMode = false;
 /*
  *  Constructing MPU-6050
@@ -155,17 +156,23 @@ void handleMatrix() {
   
 }
 
-void handleButton(int pin, int buttonNr, bool reverse) {
+void handleButton(int pin, int buttonNr, bool reverse, long pulse) {
   if (pin <0) {
     bool state = mbuttons[-pin];
-    Joystick.setButton(buttonNr, state);
+    if (state) {
+      pulseButton(buttonNr, pulse);  
+    }
+    //Joystick.setButton(buttonNr, state);
   } else {
     bool state = false;
     state = digitalRead(pin);
     if (reverse) {
       state = !state;
     }
-    Joystick.setButton(buttonNr, state);
+    if (state) {
+      pulseButton(buttonNr, pulse);  
+    }
+    //Joystick.setButton(buttonNr, state);
   }
 }
 
@@ -179,8 +186,8 @@ void handleMultiWheelButton(int aPort, int button1, int button2, int startButton
   //divider = divider + 1;
   value = value/divider;
 
-  handleButton(button1, value*2+startButton, true);
-  handleButton(button2, value*2+startButton+1, true);
+  handleButton(button1, value*2+startButton, true, shiftPulse);
+  handleButton(button2, value*2+startButton+1, true, shiftPulse);
 }
 void handleEncoder(MD_REncoder R, int buttonNr) {
   uint8_t x = R.read();
@@ -287,8 +294,8 @@ bool falseOnce = false;
 void mode1() {
   
   // read 2 gear shifters
-  handleButton(5,0,false);
-  handleButton(7,1,false);
+  handleButton(5,0,false, shiftPulse);
+  handleButton(7,1,false, shiftPulse);
 
 
   // Read 2 encoders
