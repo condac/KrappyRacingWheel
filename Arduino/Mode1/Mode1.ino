@@ -159,6 +159,9 @@ void handleMatrix() {
 void handleButton(int pin, int buttonNr, bool reverse, long pulse) {
   if (pin <0) {
     bool state = mbuttons[-pin];
+    if (reverse) {
+      state = !state;
+    }
     if (state) {
       pulseButton(buttonNr, pulse);  
     }
@@ -186,8 +189,8 @@ void handleMultiWheelButton(int aPort, int button1, int button2, int startButton
   //divider = divider + 1;
   value = value/divider;
 
-  handleButton(button1, value*2+startButton, true, shiftPulse);
-  handleButton(button2, value*2+startButton+1, true, shiftPulse);
+  handleButton(button1, value*2+startButton, false, shiftPulse);
+  handleButton(button2, value*2+startButton+1, false, shiftPulse);
 }
 void handleEncoder(MD_REncoder R, int buttonNr) {
   uint8_t x = R.read();
@@ -343,20 +346,32 @@ void mode1() {
 
   // read button matrix
   handleMatrix();
-  Joystick.setButton(6, mbuttons[1]);
-  Joystick.setButton(7, mbuttons[2]);
-  Joystick.setButton(8, mbuttons[3]);
+  handleButton(-1,6,false,shiftPulse);
+  handleButton(-2,7,false,shiftPulse);
+  handleButton(-3,8,false,shiftPulse);
+  //Joystick.setButton(6, mbuttons[1]);
+  //Joystick.setButton(7, mbuttons[2]);
+  //Joystick.setButton(8, mbuttons[3]);
   
-  Joystick.setButton(9, mbuttons[4]);
-  Joystick.setButton(10, mbuttons[5]);
-  Joystick.setButton(11, mbuttons[6]);
-  
-  Joystick.setButton(12, mbuttons[7]);
-  Joystick.setButton(13, mbuttons[8]);
+  handleButton(-4,9,false,shiftPulse);
+  handleButton(-5,10,false,shiftPulse);
+  handleButton(-6,11,false,shiftPulse);
+  //Joystick.setButton(9, mbuttons[4]);
+  //Joystick.setButton(10, mbuttons[5]);
+  //Joystick.setButton(11, mbuttons[6]);
+
+  handleButton(-7,12,false,shiftPulse);
+  handleButton(-8,13,false,shiftPulse);
+  //handleButton(-9,14,false,shiftPulse); multiwheel button
+  //Joystick.setButton(12, mbuttons[7]);
+  //Joystick.setButton(13, mbuttons[8]);
   //Joystick.setButton(14, mbuttons[9]);
-  
-  Joystick.setButton(14, mbuttons[10]);
-  Joystick.setButton(15, mbuttons[11]);
+
+  handleButton(-10,14,false,shiftPulse);
+  handleButton(-11,15,false,shiftPulse);
+  //handleButton(-12,17,false,shiftPulse); // miltiwheelbutton
+  //Joystick.setButton(14, mbuttons[10]);
+  //Joystick.setButton(15, mbuttons[11]);
   //Joystick.setButton(17, mbuttons[12]);
   
   
