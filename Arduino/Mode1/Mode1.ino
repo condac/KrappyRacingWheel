@@ -45,7 +45,7 @@ int mbutts[MATRIXBUTTONS];
 
 double totalTurnAngle = 360; // 360 is 180 to each side. typical road car have ~900
 
-long shiftPulse = 20;
+long shiftPulse = 50;
 bool setupMode = false;
 /*
  *  Constructing MPU-6050
@@ -62,7 +62,7 @@ Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(115200);
   pinMode(0,INPUT_PULLUP);
   pinMode(1,INPUT_PULLUP);
   pinMode(2,INPUT_PULLUP);
@@ -422,10 +422,27 @@ void mode1() {
 
 #define PULSEARRAY 32
 long pulseArray[PULSEARRAY];
+long serialStick;
 
 void pulseButton(int button, long pulse) {
     
-  pulseArray[button] = millis() + pulse;    
+  pulseArray[button] = millis() + pulse; 
+  if ( button == 26) {
+    if (serialStick<millis()) {
+      Serial.println("sb-;");
+      serialStick = millis() + 200;
+    }
+    
+  }
+  else if ( button == 27) {
+    if (serialStick<millis()) {
+      Serial.println("sb+;");
+      serialStick = millis() + 200;
+    }
+  }
+  else {
+    serialStick = false;
+  }
 
 }
 void pulseLoop() {

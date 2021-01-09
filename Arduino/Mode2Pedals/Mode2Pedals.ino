@@ -70,10 +70,11 @@ int brRaw;
 int cl;
 int clRaw;
 
+long brakeMax = 100; // custom max brake output
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(115200);
   pinMode(0,INPUT_PULLUP);
   pinMode(1,INPUT_PULLUP);
   pinMode(2,INPUT_PULLUP);
@@ -109,11 +110,13 @@ void setup() {
 
 
 void loop() {
+  //Serial.println("loop");
 #ifdef GYRO_STEERING
   mpu.Execute();
   gyroSteering();
 #endif
-
+  
+  readSerialBrakeMax();
   // Throttle
   thRaw = analogRead(THROTTLE_PIN);
   if(THROTTLE_REV == 1) {
@@ -125,13 +128,17 @@ void loop() {
   Joystick.setAccelerator(th);
 
   // Brake
+  long brMax = (1023 *brakeMax)/100;
+  if (brMax >1023) {
+    brMax = 1023;
+  }
   brRaw = analogRead(BRAKE_PIN);
   if(BRAKE_REV == 1) {
     br = map(brRaw, BRAKE_MAX, BRAKE_MIN,0,1023);
   } else {
     br = map(brRaw, BRAKE_MIN, BRAKE_MAX,0,1023);
   }
-  br = limit(br, 0, 1023);
+  br = limit(br, 0, brMax);
   Joystick.setBrake(br);
 
 
@@ -198,6 +205,20 @@ void loop() {
 
 }
 
+void readSerialBrakeMax() {
+  if (Serial.available() > 0) {
+    // get incoming byte:
+    char inByte = Serial.read();
+    if (inByte == 'b') {
+      int brake = Serial.parseInt();
+      if (brake <=100 && brake > 0) {
+        brakeMax = brake;
+        Serial.print("Brake max set ");
+        Serial.println(brakeMax);
+      }
+    }
+  }
+}
 void handleButton(int pin, int buttonNr, bool reverse) {
 
   bool state = false;
