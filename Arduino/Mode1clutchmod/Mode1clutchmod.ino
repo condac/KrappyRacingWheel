@@ -105,7 +105,7 @@ void setup() {
   Joystick.setYAxisRange(-512, 512);
   Joystick.setZAxisRange(-512, 512);
   
-  Joystick.setRxAxisRange(-512, 512);
+  Joystick.setRxAxisRange(0, 10000);
   Joystick.setRyAxisRange(-512, 512);
   Joystick.setRzAxisRange(-512, 512);
 }
@@ -370,7 +370,10 @@ void mode1() {
   // read button matrix
   handleMatrix();
   handleButton(-1,6,false,shiftPulse);
-  handleButton(-2,7,false,shiftPulse);
+  
+  if (multiValue <= 3) {
+      handleButton(-2,7,false,shiftPulse);
+    }
   handleButton(-3,8,false,shiftPulse);
   //Joystick.setButton(6, mbuttons[1]);
   //Joystick.setButton(7, mbuttons[2]);
@@ -405,12 +408,12 @@ void mode1() {
   a1 = (a1-512);
   int a2 = analogRead(A9);
   a2 = (a2-512);
-  int a3 = analogRead(A10);
-  a3 = (a3-512);
+  //int a3 = analogRead(A10);
+  //a3 = (a3);
   Joystick.setXAxis(0);
   Joystick.setYAxis(a1);
   Joystick.setZAxis(a2);
-  Joystick.setRxAxis(a3);
+  //Joystick.setRxAxis(a3);
   Joystick.setRyAxis(a0);
   Joystick.setRzAxis(0);
   // read multiwheel dial
@@ -421,8 +424,13 @@ void mode1() {
   
   handleERS(0,A10,4,5);
 
+  // clutch soft launch
+  clutchLaunch();
+  
   // handle pulsed buttons
   pulseLoop();
+  
+
   // send state
   Joystick.sendState();
   counter++;
@@ -466,16 +474,64 @@ void pulseButton(int button, long pulse) {
   }
 
 }
+
+int clutchValue = 0;
+int clutchRate = 2;
+int clutchStage1 = 4500;
+
 void pulseLoop() {
   long mil = millis();
   for (int i=0;i<PULSEARRAY;i++) {
-    if (pulseArray[i] != 0) {
-      if(pulseArray[i] > mil) {
-        Joystick.setButton(i, true);
-      } else {
-        Joystick.setButton(i,false);
+    if (i == 7) {
+      if (pulseArray[i] != 0) {
+        if(pulseArray[i] > mil) {
+          Joystick.setRxAxis(10000);
+        } else {
+          Joystick.setRxAxis(clutchValue);
+        }
       }
     }
+    else {
+      if (pulseArray[i] != 0) {
+        if(pulseArray[i] > mil) {
+          Joystick.setButton(i, true);
+        } else {
+          Joystick.setButton(i,false);
+        }
+      }  
+    }
+    
   }
+
+}
+
+
+
+
+void clutchLaunch() {
+  bool state = mbuttons[2];
+  int a3 = 0;
+  if (state) {
+    clutchValue = 6000;
+  }
+  else {
+    if (clutchValue > clutchStage1) {
+      clutchValue = clutchStage1;
+    }
+    else {
+      clutchValue = clutchValue - clutchRate;
+    }
+  }
+  if (clutchValue < 0) {
+    clutchValue = 0;
+  }
+  bool state2 = mbuttons[8];
+  if (state2) {
+    if (multiValue > 3) {
+      pulseButton(7,shiftPulse);
+    }
+  }
+  Joystick.setRxAxis(clutchValue);
+  
 
 }

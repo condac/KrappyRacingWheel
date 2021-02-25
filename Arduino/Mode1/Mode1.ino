@@ -136,6 +136,7 @@ int button = 0;
 bool currentButtonState;
 double prevang = 0.0;
 int turns = 0;
+int multiValue;
 
 void loop() {
   mode1();
@@ -156,9 +157,10 @@ void handleMatrix() {
   
 }
 
-void handleButton(int pin, int buttonNr, bool reverse, long pulse) {
+bool handleButton(int pin, int buttonNr, bool reverse, long pulse) {
+  bool state;
   if (pin <0) {
-    bool state = mbuttons[-pin];
+    state = mbuttons[-pin];
     if (reverse) {
       state = !state;
     }
@@ -167,7 +169,7 @@ void handleButton(int pin, int buttonNr, bool reverse, long pulse) {
     }
     //Joystick.setButton(buttonNr, state);
   } else {
-    bool state = false;
+    state = false;
     state = digitalRead(pin);
     if (reverse) {
       state = !state;
@@ -177,6 +179,7 @@ void handleButton(int pin, int buttonNr, bool reverse, long pulse) {
     }
     //Joystick.setButton(buttonNr, state);
   }
+  return state;
 }
 
 void handleMultiWheelButton(int aPort, int button1, int button2, int startButton, int sections) {
@@ -188,7 +191,7 @@ void handleMultiWheelButton(int aPort, int button1, int button2, int startButton
   int divider = 1024/sections;
   //divider = divider + 1;
   value = value/divider;
-
+  multiValue = value;
   handleButton(button1, value*2+startButton, false, shiftPulse);
   handleButton(button2, value*2+startButton+1, false, shiftPulse);
 }
