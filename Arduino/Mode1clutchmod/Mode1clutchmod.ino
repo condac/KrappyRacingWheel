@@ -304,24 +304,19 @@ void handleERS(int x, int aPin, int button1, int button2) {
 bool falseOnce = false;
 long shiftLock = 0;
 long shiftLockTime = 300;
+
 void mode1() {
   
   // read 2 gear shifters
-  long mil = millis();
-  if ( shiftLock < mil ) {
-    if (pulseArray[5] < mil && pulseArray[7] < mil) {
-      bool ss1 = handleButton(5,0,false, shiftPulse);
-  
-      bool ss2 = handleButton(7,1,false, shiftPulse);
-      if (ss1 || ss2) {
-        shiftLock = mil+shiftLockTime;
-        //Serial.println(multiValue);
-        if (multiValue > 3) {
-          pulseButton(7,shiftPulse);
-        }
-      }
+  bool ss1 = handleButton(5,0,true, shiftPulse);
+  bool ss2 = handleButton(7,1,true, shiftPulse);
+  if (ss1 || ss2) {
+    
+    if (multiValue > 3) {
+      pulseButton(7,shiftPulse);
     }
   }
+  
   
 
   // Read 2 encoders
